@@ -1,0 +1,249 @@
+-- 画面に表示するScreenGuiを取得または作成
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "FeNbHub"
+screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+-- 背景を設定
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0.5, 0, 0.5, 0)
+frame.Position = UDim2.new(0.25, 0, 0.25, 0)
+frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+frame.BackgroundTransparency = 0.5
+frame.Parent = screenGui
+
+-- タイトルのラベルを作成
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Text = "Fe nb hub"
+titleLabel.Size = UDim2.new(0.8, 0, 0.2, 0)  -- 少し幅を広げる
+titleLabel.Position = UDim2.new(0, 0, 0, 0)  -- 左端に配置
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.TextSize = 30
+titleLabel.TextScaled = true
+titleLabel.BackgroundTransparency = 1
+titleLabel.Parent = frame
+
+-- － と ＋ のボタンを作成
+local minusButton = Instance.new("TextButton")
+minusButton.Text = "－"
+minusButton.Size = UDim2.new(0.1, 0, 0.2, 0)
+minusButton.Position = UDim2.new(0.8, 0, 0, 0)  -- GUI名の右隣に配置
+minusButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+minusButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+minusButton.TextSize = 20
+minusButton.Parent = frame
+
+local plusButton = Instance.new("TextButton")
+plusButton.Text = "＋"
+plusButton.Size = UDim2.new(0.1, 0, 0.2, 0)
+plusButton.Position = UDim2.new(0.9, 0, 0, 0)  -- －ボタンの右隣に配置
+plusButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+plusButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+plusButton.TextSize = 20
+plusButton.Parent = frame
+
+-- ×ボタンを作成
+local closeButton = Instance.new("TextButton")
+closeButton.Text = "×"
+closeButton.Size = UDim2.new(0.1, 0, 0.2, 0)
+closeButton.Position = UDim2.new(0.7, 0, 0, 0)  -- GUI名の左隣に配置
+closeButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.TextSize = 20
+closeButton.Parent = frame
+
+-- 最初のボタン（Click me!）を作成
+local buttonClickMe = Instance.new("TextButton")
+buttonClickMe.Text = "Click me!"
+buttonClickMe.Size = UDim2.new(0.6, 0, 0.2, 0)
+buttonClickMe.Position = UDim2.new(0.2, 0, 0.6, 0)
+buttonClickMe.BackgroundColor3 = Color3.fromRGB(0, 128, 255)
+buttonClickMe.TextColor3 = Color3.fromRGB(255, 255, 255)
+buttonClickMe.TextSize = 20
+buttonClickMe.Parent = frame
+
+-- Fe zombieボタンを作成する関数
+local function createFeZombieButton()
+    -- Fe zombieボタンを作成
+    local buttonFeZombie = Instance.new("TextButton")
+    buttonFeZombie.Text = "Fe zombie"
+    buttonFeZombie.Size = UDim2.new(0.6, 0, 0.2, 0)
+    buttonFeZombie.Position = UDim2.new(0.2, 0, 0.8, 0)  -- 下に配置
+    buttonFeZombie.BackgroundColor3 = Color3.fromRGB(255, 0, 0)  -- 初期状態は赤
+    buttonFeZombie.TextColor3 = Color3.fromRGB(255, 255, 255)
+    buttonFeZombie.TextSize = 20
+    buttonFeZombie.Parent = frame
+
+    -- ボタンの状態を管理する変数
+    local isActive = false  -- 初期状態はオフ（赤色）
+
+    -- フリング機能
+    local RunService = game:GetService("RunService")
+    local Players = game:GetService("Players")
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local hiddenfling = true  -- 最初からフリング状態がONの状態にします
+    local flingThread
+
+    -- アニメーションの設定
+    local zombieAnimConnection
+
+    local function applyZombieAnimations()
+        local character = game.Players.LocalPlayer.Character
+        local animate = character:WaitForChild("Animate")
+        animate.idle.Animation1.AnimationId = "http://www.roblox.com/asset/?id=10921344533"
+        animate.idle.Animation2.AnimationId = "http://www.roblox.com/asset/?id=10921345304"
+        animate.run.RunAnim.AnimationId = "http://www.roblox.com/asset/?id=616163682"
+        animate.jump.JumpAnim.AnimationId = "http://www.roblox.com/asset/?id=10921351278"
+        animate.fall.FallAnim.AnimationId = "http://www.roblox.com/asset/?id=10921350320"
+        animate.climb.ClimbAnim.AnimationId = "http://www.roblox.com/asset/?id=10921343576"
+    end
+
+    local function removeZombieAnimations()
+        local character = game.Players.LocalPlayer.Character
+        local animate = character:WaitForChild("Animate")
+        animate.idle.Animation1.AnimationId = ""
+        animate.idle.Animation2.AnimationId = ""
+        animate.run.RunAnim.AnimationId = ""
+        animate.jump.JumpAnim.AnimationId = ""
+        animate.fall.FallAnim.AnimationId = ""
+        animate.climb.ClimbAnim.AnimationId = ""
+    end
+
+    -- フリング機能の開始
+    local function fling()
+        local lp = Players.LocalPlayer
+        local c, hrp, vel, movel = nil, nil, nil, 0.1
+        local humanoid = lp.Character and lp.Character:FindFirstChild("Humanoid")
+
+        -- 初期の速度とジャンプ力を保持
+        local originalWalkSpeed = humanoid and humanoid.WalkSpeed or 16
+        local originalJumpPower = humanoid and humanoid.JumpPower or 50
+
+        -- フリング状態がONの場合にフリング処理を開始
+        while hiddenfling do
+            RunService.Heartbeat:Wait()
+            c = lp.Character
+            hrp = c and c:FindFirstChild("HumanoidRootPart")
+
+            if hrp then
+                vel = hrp.Velocity
+                -- フリングを強制的に発生させるため、速度を非常に高く設定
+                hrp.Velocity = vel * 10000 + Vector3.new(0, 10000, 0)
+                RunService.RenderStepped:Wait()
+                hrp.Velocity = vel  -- 元の速度に戻す
+                RunService.Stepped:Wait()
+                -- 上下の動きを加えることでフリングを強調
+                hrp.Velocity = vel + Vector3.new(0, movel, 0)
+                movel = -movel  -- 上下の動きが反転
+            end
+
+            -- ジャンプ力とスピードの上昇を反映
+            if humanoid then
+                humanoid.WalkSpeed = originalWalkSpeed * 3  -- スピードを3倍に設定
+                humanoid.JumpPower = originalJumpPower * 2  -- ジャンプ力を2倍に設定
+            end
+        end
+
+        -- フリングが停止した場合、速度とジャンプ力を元に戻す
+        if humanoid then
+            humanoid.WalkSpeed = originalWalkSpeed
+            humanoid.JumpPower = originalJumpPower
+        end
+    end
+
+    -- フリングを開始する関数
+    local function startFling()
+        hiddenfling = true
+        flingThread = coroutine.create(fling)
+        coroutine.resume(flingThread)
+    end
+
+    -- フリングを停止する関数
+    local function stopFling()
+        hiddenfling = false
+    end
+
+    -- Fe zombieボタンがクリックされた時の動作
+    buttonFeZombie.MouseButton1Click:Connect(function()
+        if isActive then
+            -- 緑色（発動中）から赤色（オフ）に戻す
+            buttonFeZombie.BackgroundColor3 = Color3.fromRGB(255, 0, 0)  -- 赤色
+            stopFling()  -- フリングを停止
+            removeZombieAnimations()  -- アニメーションを元に戻す
+            isActive = false
+            print("Fe zombieボタンがオフになりました！")
+        else
+            -- 赤色（オフ）から緑色（発動中）に切り替え
+            buttonFeZombie.BackgroundColor3 = Color3.fromRGB(0, 255, 0)  -- 緑色
+            startFling()  -- フリングを開始
+            applyZombieAnimations()  -- アニメーションを適用
+            isActive = true
+            print("Fe zombieボタンが発動中になりました！")
+        end
+    end)
+end
+
+-- 最初のボタン（Click me!）がクリックされたとき
+buttonClickMe.MouseButton1Click:Connect(function()
+    print("Click me! ボタンがクリックされました！")
+    -- 最初のボタンを非表示にする
+    buttonClickMe.Visible = false
+    -- Fe zombieボタンを表示する
+    createFeZombieButton()
+end)
+
+-- ドラッグ機能を追加
+local dragging = false
+local dragInput, dragStart, startPos
+
+-- フレームをドラッグできるようにする
+frame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = frame.Position
+    end
+end)
+
+frame.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+frame.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+-- 縮小・拡大の処理
+local function minimizeGui()
+    frame.Size = UDim2.new(0.2, 0, 0.2, 0)
+    titleLabel.Size = UDim2.new(1, 0, 0.2, 0)
+    minusButton.Text = "＋"
+end
+
+local function maximizeGui()
+    frame.Size = UDim2.new(0.5, 0, 0.5, 0)
+    titleLabel.Size = UDim2.new(1, 0, 0.2, 0)
+    minusButton.Text = "－"
+end
+
+minusButton.MouseButton1Click:Connect(function()
+    if minusButton.Text == "－" then
+        minimizeGui()
+    else
+        maximizeGui()
+    end
+end)
+
+plusButton.MouseButton1Click:Connect(function()
+    if plusButton.Text == "＋" then
+        maximizeGui()
+    end
+end)
+
+closeButton.MouseButton1Click:Connect(function()
+    screenGui:Destroy()
+end)
